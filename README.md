@@ -1,5 +1,5 @@
 # koekoedownloader
-https://koe-koe.com の音声をダウンロードするツール。
+https://koe-koe.com の音声をダウンロードするツール
 ```
 pip install -r requirements.txt
 
