@@ -20,9 +20,7 @@ with open("archive.txt", "a") as f:
     f.write("")
 with open("archive.txt", "r") as f:
     archive_list = f.readlines()
-
 archive_list = set(archive_list)
-
 
 class Session:
     user_agent = "Mozilla/5.0 (iPhone; CPU OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/14E304 Safari/605.1.15"
@@ -39,12 +37,13 @@ class Session:
         self.requests_count += 1
         r = getattr(self._session, "get")(*arrgs, **kwarrgs)
         return r
-    
 session = Session()
+
 
 def add_archive(url: str, filepath="archive.txt"):
     with open(filepath, "a") as f:
         f.write(url+"\n")
+
 
 def get_html(url):
     retry = 2
@@ -63,6 +62,7 @@ def get_html(url):
     else:
         raise KoekoeException_NetworkError
     return response.text
+
 
 def get_postlist(url: str, limit = 100) -> list:
     
@@ -102,6 +102,7 @@ def get_postlist(url: str, limit = 100) -> list:
 
     return postlist
 
+
 def posturl_to_audiourl(url: str):
     OLD_POST_ID = 161299
     URL_POST_OLD = "https://file.koe-koe.com/sound/old/"
@@ -113,6 +114,7 @@ def posturl_to_audiourl(url: str):
         audio_url = "{0}{1}.mp3".format(URL_POST_UPLOAD,id)
     return audio_url
     
+
 def download_voice(url: str, filepath: str, delay=0.5):
 
     ext = "." + url.split(".")[-1]
@@ -164,10 +166,9 @@ def main():
     if not postlist:
         print("データを取得できませんでした。")
         return
-    
-    downloaded_list = []
-    i = 0
+    downloaded_list = []   
     postlist_len = len(postlist)
+    i = 0
     try:
         for post in postlist:
             url_ = post["link"]
@@ -183,13 +184,14 @@ def main():
             try:
                 filename = "save/{0}/[{1}]{2}".format(sanitize_filename(username_), id, sanitize_filename(title_))
                 download_voice(dlurl, filename)
+                print("保存({0}/{1}): {2}".format(i+1, postlist_len, url_))
+                downloaded_list.append(url_)
             except KoekoeException_ServerError:
+                raise
+            except KoekoeException_Limiter:
                 raise
             except Exception:
                 print("保存に失敗しました。スキップします。: {0}".format(url_))
-            
-            print("保存({0}/{1}): {2}".format(i+1, postlist_len, url_))
-            downloaded_list.append(url_)
             i+=1
 
     except KoekoeException_ServerError:
