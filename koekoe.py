@@ -1,14 +1,13 @@
 A = ""
 from lxml import html as html_
 import requests
-from bs4 import BeautifulSoup
 import re
 import time
 from pathvalidate import sanitize_filename
 import pathlib
 import os
 import sys
-import rich
+
 class KoekoeException_ServerError(Exception):
     pass
 class KoekoeException_NetworkError(Exception):
@@ -59,6 +58,8 @@ def get_html(url):
             if 500 <= response.status_code <= 599:
                 raise KoekoeException_ServerError
             continue
+        except requests.Timeout:
+            raise KoekoeException_ServerError
     else:
         raise KoekoeException_NetworkError
     return response.text
@@ -72,23 +73,21 @@ def get_postlist(url: str, limit = 100) -> list:
         print("ページ数: {0} URL: {1}".format(i+1, url))
         html = get_html(url)
         tree = html_.fromstring(html)
-        soup = BeautifulSoup(html, "lxml")
         
-        a_tag = soup.find_all("a", href=re.compile("detail"), title=re.compile("の投稿"))
-        if a_tag:
+        a_tags = tree.xpath('//a[contains(@href, "detail") and contains(@title, "の投稿")]')
+
+        if a_tags:
             j = 0
-            for a_tagtag in a_tag:
+            for a_tag in a_tags:
                 if not j % 2 == 0:
-                    # print(a_tagtag)
-                    link = "https://koe-koe.com/"+a_tagtag["href"]
-                    username = a_tagtag.text
-                    title = a_tagtag["title"][1:-4]
+                    link = "https://koe-koe.com/" + a_tag.get("href")
+                    username = a_tag.text_content()
+                    title = re.sub(r"^.|.{4}$", "", a_tag.get("title")) 
                     postlist.append({"link": link, "username": username, "title": title})
-                j+=1
+                j += 1
         
         next_link = tree.xpath('//*[@id="content"]/div[13]/div/a[2]')
         url = ""
-
         if not next_link:
             next_link = tree.xpath('//*[@id="content"]/div[14]/div/a')
         
@@ -98,12 +97,6 @@ def get_postlist(url: str, limit = 100) -> list:
         else:
             break
         url = next_link[-1].attrib["href"]
-        # if len(next_link) == 1:
-        #     url = next_link[-1].attrib["href"]
-        # elif len(next_link) == 2:
-        #     url = next_link[-1].attrib["href"]
-        # else:
-        #     break
         url = "https://koe-koe.com/" + url;
 
 
@@ -169,7 +162,7 @@ def main():
     
     postlist = get_postlist(url)
     if not postlist:
-        print("データを取得できませんでした。プログラムが壊れているか、不明なURLが指定された可能性があります。")
+        print("データを取得できませんでした。")
         return
     
     downloaded_list = []
