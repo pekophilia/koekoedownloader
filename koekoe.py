@@ -1,6 +1,4 @@
-A = \
-"""　　　　　　　 　 　 　 　 　 ,.ｨ__厂￣｀Y⌒Y⌒Y´ ￣7ヽ\r\n　　　　　　　　　　　　　／./＼＞ \'\"´ ￣￣　｀`　､/　Ｌ.,＿\r\n　　　 　 　 　 　 　 　 /　/＼/　　　　　　　　　　　 ヽ/＿ 人\r\n　　　　　　　　　　　 /　厶イ　　　 　 　 　 　 |　　 　 ｀＼ ヽ(＿\r\n　　　 　 　 　 　 　 /　 ／　　　　 　 　 / 　 /| 　 　 　 　 ＼\',　/\r\n　　　　　　　　　　/ ∠＿＿　 　 __/__/ 　 / .|　　　　　　 　 ヾ{\r\n　　　 　 　 　 　 / /　　　／　´/ /　/ ｀／　 |:!　　 |　　　　　 ′\r\n. 　 　 　 　 ,.　イ /　 　彡ｸ⌒f斧=ミ}／　　 ,从 　 ｉ| |　　　| 　 \'\r\n　 　 　 　 /　　j/　　　／( Y }　以ソ　　　 f斧=ミ川│　　 |｜ {\r\n.　　 　 　 }/|　　 　 ／　/ Y {　　　　　　　　 以ｿ 刈 |l　　 j! |　′\r\n.　　　 　 　 j　　 ／　　 { Y 人　　　　 　 \'　 　　 / )}ハ 　,小|/\r\n　　　　　　 彡イ!　 / 　( Y )　i＼　　 __　　　　 /Y )　 }／|\r\n　　　　　　　〈 从　{ヽ　( Y )　|　 丶 ＿ . ｡c≦ ( Y )　　　|\r\n　　　 　 「￣ 　／)ﾉ　) ( Y )￣｀　､　 　 「ヽ,＿_( Y )＿ 　|\r\n　　　　　|　　 / （　　　 ( Y )　　　　＼_,人/ ＼ ( Y )　 | ￤\r\n.　　　 　 ＼ /　　)二=-( Y )＼　　　/＿__＼ 　 ( Y )／L,j\r\n　　　 　 　 /　　(／) 　 [只]､　＼ ,///////,＼/( Y)　　/\r\n.　　 　 　 /　　 　 (　 　 (从: :＼／￣|//|//「￣ [只]　/\r\n　　　　　〈　 /　　　ヽ＿}: : : : : : :＼　|//|//|　 ／:＼　{\r\n　　　　 　 Y　　　　　 　 }: : : : : : : : ヽ|//|//／: : : : : ヽ ＼.\r\n.　　　　 　 }/￣￣V　 /{ : : : : : : : : : :|//|/〉: : : : : : : : }　　〉\r\n　　 　 「￣.′　 　 「￣ ｀ヽ/ ￣￣ V:|／{/: : : : : : : : :/　 /\r\n　　　　| 　.i_　　-=二二=- L　_＿_ ﾉ: : : : : : : : : : : : /　 /\r\n＿,,. 　-=二二=-＿_-=二二二二=-　.,,_: : : : : : : : ｲ 　 {\r\n二=-　´二二二二r 、-=二.,ニニﾆ｀‐=二=-､ : : :{/　　 {\r\n` ＜二二二二二/ 厶イ／/77二二二二＞ \' : : :{⌒\'f\"´\r\n　　　 ￣ | 　 　 /　　／　/　/ ￣￣￣ \"\'\'＜: : : : :〉　|\r\n　　　　　 、　　　　　　　　／_,.　 -===-　 .,　` ､:/ 　 |\r\n　 　 　 　 ＞-‐=￢宀冖´／ 　　　　　　　　\"\'\'＜＼　|\r\n　　 　 ／　　　／／　 ／　　　　 　 　 　 　 　 　 ＼＼\r\n.　　／　　　／: : | 　 /　　　　　　　　　　　　　 　 　 ＼＼\r\n"""
-
+A = ""
 from lxml import html as html_
 import requests
 from bs4 import BeautifulSoup
@@ -36,8 +34,8 @@ class Session:
         self.requests_count = 0
 
     def get(self, *arrgs, **kwarrgs):
-
-        if self.requests_count > 1000:
+        time.sleep(0.01)
+        if self.requests_count >= 500:
             raise KoekoeException_Limiter
         self.requests_count += 1
         r = getattr(self._session, "get")(*arrgs, **kwarrgs)
@@ -88,16 +86,24 @@ def get_postlist(url: str, limit = 100) -> list:
                     postlist.append({"link": link, "username": username, "title": title})
                 j+=1
         
-        next_link = tree.xpath('//*[@id="content"]/div[14]/div/a')
-        if not next_link:
-            tree.xpath('//*[@id="content"]/div[14]/div/a[2]')
+        next_link = tree.xpath('//*[@id="content"]/div[13]/div/a[2]')
         url = ""
-        if len(next_link) == 1:
-            url = next_link[-1].attrib["href"]
-        elif len(next_link) == 2:
-            url = next_link[-1].attrib["href"]
+
+        if not next_link:
+            next_link = tree.xpath('//*[@id="content"]/div[14]/div/a')
+        
+        if next_link:
+            if next_link[0].attrib["href"] == "search.php":
+                break
         else:
             break
+        url = next_link[-1].attrib["href"]
+        # if len(next_link) == 1:
+        #     url = next_link[-1].attrib["href"]
+        # elif len(next_link) == 2:
+        #     url = next_link[-1].attrib["href"]
+        # else:
+        #     break
         url = "https://koe-koe.com/" + url;
 
 
@@ -114,14 +120,14 @@ def posturl_to_audiourl(url: str):
         audio_url = "{0}{1}.mp3".format(URL_POST_UPLOAD,id)
     return audio_url
     
-def download_voice(url: str, filepath: str):
+def download_voice(url: str, filepath: str, delay=0.5):
 
     ext = "." + url.split(".")[-1]
     filepath = str(pathlib.Path(filepath))+ext
     os.makedirs(pathlib.Path(filepath).parent, exist_ok=True)
-
+    r = None
     try:
-        time.sleep(0.5)
+        time.sleep(delay)
         r = session.get(url=url, stream=True)
         r.raise_for_status()
         with open(filepath, "wb") as f:
@@ -148,10 +154,14 @@ def main():
     url = args[1]
     req_ex = requests.exceptions
     
+    #url test
     try:
-        urltest = get_html(url)    
+        urltest = get_html(url)
+        if "detail.php" in url:
+            print("対応していないURLです。")
+            return
     except (req_ex.MissingSchema, req_ex.InvalidURL):
-        print("不明なURL。https://から始まってますか？また、urlをシングルクォーテーションで囲ってください。")
+        print("不明なURL。https://から始まってますか？また、urlをシングルクォーテーションで囲ってみてください。")
         return
     except (KoekoeException_ServerError):
         print("サーバーエラーが返ってきたので終了します。あとでやり直してください。")
@@ -188,7 +198,7 @@ def main():
             print("保存({0}/{1}): {2}".format(i+1, postlist_len, url_))
             downloaded_list.append(url_)
             i+=1
-            
+
     except KoekoeException_ServerError:
         print("サーバーエラーが返ってきたので終了します。あとでやり直してください。")
         return
