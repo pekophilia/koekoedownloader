@@ -1,13 +1,15 @@
 A = ""
-from lxml import html as html_
-import requests
 import re
 import time
-from pathvalidate import sanitize_filename
 import pathlib
 import os
 import sys
+import urllib.parse
 from datetime import datetime, timedelta
+
+import requests
+from pathvalidate import sanitize_filename
+from lxml import html as html_
 
 class KoekoeException_ServerError(Exception):
     pass
@@ -108,7 +110,7 @@ def get_postlist(url: str, limit = 100) -> list:
                     title = re.sub(r"^.|.{4}$", "", a_tag.get("title")) 
                     postlist_.append({"link": link, "username": username, "title": title, "date": ""})
                 j += 1
-        
+
         p_date_tags = tree.xpath('//p[@class="meta" and contains(text(), "@")]')
         j = 0
         for p_tag in p_date_tags:
@@ -116,22 +118,32 @@ def get_postlist(url: str, limit = 100) -> list:
             postlist_[j]["date"] = date
             j+=1
 
-        next_link = tree.xpath('//*[@id="content"]/div[13]/div/a[2]')
-        if not next_link:
-            next_link = tree.xpath('//*[@id="content"]/div[14]/div/a')        
-            if next_link:
-                if next_link[0].attrib["href"] == "search.php":
-                    break
-                if len(next_link) == 1 and "p=" in url:
-                    break
-            else:
-                break
-                
-        url = next_link[-1].attrib["href"]
-        url = "https://koe-koe.com/" + url;
         postlist += postlist_
 
+        next_link = get_nextlink(html, url)
+        if next_link:
+            url = next_link
+        else:
+            break
+
     return postlist
+
+def get_nextlink(html: str, url_now):
+    def get_pageid(a):
+        return int(urllib.parse.parse_qs(urllib.parse.urlparse(a).query).get("p", [1])[0])
+    arg_pageid = get_pageid(url_now)
+    tree = html_.fromstring(html)
+    a_tags = tree.xpath("//a[contains(@href, 'p=')]")
+    nextlink = ""
+    for a_tag in a_tags:
+        href = a_tag.attrib["href"]
+        href_pageid = get_pageid(href)
+        if href_pageid == (arg_pageid+1):
+            nextlink = f"https://koe-koe.com/{href}"
+            break
+    else:
+        nextlink = None
+    return nextlink
 
 
 def posturl_to_audiourl(url: str):
