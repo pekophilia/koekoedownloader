@@ -89,36 +89,16 @@ def get_html(url):
 
 
 def get_postlist(url: str, limit = 100) -> list:
-    
+    #postlist: {"link": link, "username": username, "title": title, "date": ""}
     limit_page = limit
 
     postlist = []
     for i in range(limit_page):
         postlist_ = []
-        print("ページ数: {0} URL: {1}".format(i+1, url))
+        print("Page: {0} URL: {1}".format(i+1, url))
         html = get_html(url)
-        tree = html_.fromstring(html)
-        
-        a_tags = tree.xpath('//a[contains(@href, "detail") and contains(@title, "の投稿")]')
-        
-        if a_tags:
-            j = 0
-            for a_tag in a_tags:
-                if not j % 2 == 0:
-                    link = "https://koe-koe.com/" + a_tag.get("href")
-                    username = a_tag.text_content()
-                    title = re.sub(r"^.|.{4}$", "", a_tag.get("title")) 
-                    postlist_.append({"link": link, "username": username, "title": title, "date": ""})
-                j += 1
 
-        p_date_tags = tree.xpath('//p[@class="meta" and contains(text(), "@")]')
-        j = 0
-        for p_tag in p_date_tags:
-            date = parse_postdate(p_tag.text_content().split("@")[-1])
-            postlist_[j]["date"] = date
-            j+=1
-
-        postlist += postlist_
+        postlist += parse_postlist(html)
 
         next_link = get_nextlink(html, url)
         if next_link:
@@ -126,6 +106,24 @@ def get_postlist(url: str, limit = 100) -> list:
         else:
             break
 
+    return postlist
+
+def parse_postlist(html):
+    postlist = []
+    tree = html_.fromstring(html)
+
+    url_tags = tree.xpath('//a[contains(@href, "detail") and contains(@title, "の投稿")]')
+    username_tags = tree.xpath("//span[contains(@class, 'entry_auth')]/text()")
+    title_tags = tree.xpath("//p[contains(@class, 'desc_auth_title')]/text()")
+    date_tags = tree.xpath("//span[contains(@class, 'metaIcon_up')]/text()")
+    tags = [url_tags, username_tags, title_tags, date_tags]
+    if all(tags):
+        for u_tag, n_tag, t_tag, d_tag in zip(*tags):
+            link = "https://koe-koe.com/" + u_tag.get("href")
+            username = n_tag
+            title = t_tag.replace("：", "", 1) #スライスを使うとトリップ、IDが消えるので。
+            date = parse_postdate(d_tag.split("@")[-1])
+            postlist.append({"link": link, "username": username, "title": title, "date": date})
     return postlist
 
 def get_nextlink(html: str, url_now):
