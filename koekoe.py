@@ -187,7 +187,7 @@ def main():
     
     if len(args) <= 1:
         print(A)
-        print("URLがないです")
+        print("Need URL")
         return
     url = args[1]
     req_ex = requests.exceptions
@@ -196,18 +196,18 @@ def main():
     try:
         urltest = get_html(url)
         if "detail.php" in url:
-            print("対応していないURLです。")
+            print("Not supported URL.")
             return
     except (req_ex.MissingSchema, req_ex.InvalidURL):
-        print("不明なURL。https://から始まってますか？また、urlをシングルクォーテーションで囲ってみてください。")
+        print("URL Error.")
         return
     except (KoekoeException_ServerError):
-        print("サーバーエラーが返ってきたので終了します。あとでやり直してください。")
+        print("Server Error.")
         return
     
     postlist = get_postlist(url)
     if not postlist:
-        print("データを取得できませんでした。")
+        print("couldn't get Post List")
         return
     downloaded_list = []   
     postlist_len = len(postlist)
@@ -223,30 +223,31 @@ def main():
             
             if any(url_ in url for url in archive_list):
                 postlist_len -= 1
-                print("archive.txtによりスキップされました: {0}".format(url_))
+                print("Skipped by archive.txt: {0}".format(url_))
                 continue
             try:
                 filename = "save/{0}/[{1}]{2}({3})".format(sanitize_filename(username_), id, sanitize_filename(title_), date)
                 download_voice(dlurl, filename)
-                print("保存({0}/{1}): {2}".format(i+1, postlist_len, url_))
+                print("Downloaded({0}/{1}): {2}".format(i+1, postlist_len, url_))
                 downloaded_list.append(url_)
             except KoekoeException_ServerError:
                 raise
             except KoekoeException_Limiter:
                 raise
             except Exception:
-                print("保存に失敗しました。スキップします。: {0}".format(url_))
+                print("Save Error. Skip: {0}".format(url_))
             i+=1
 
     except KoekoeException_ServerError:
-        print("サーバーエラーが返ってきたので終了します。あとでやり直してください。")
+        print("ServerError.")
         return
     except KoekoeException_Limiter:
-        print("接続数の上限を超えました。")
+        print("NetworkLimitOver.")
         return
     except KoekoeException_NetworkError:
-        print("サイトへの接続に連続で失敗しました。")
+        print("NetworkError.")
     finally:
+        print("recorded that downloaded url in archive.txt.")
         add_archive("\n".join(downloaded_list))
     
 if __name__ == "__main__":
